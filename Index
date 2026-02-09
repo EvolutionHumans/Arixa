@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>许可证管理系统</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>🔐 许可证管理系统</h1>
+            <p class="subtitle">License Management System</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-tab="generate">生成许可证</button>
+            <button class="tab" data-tab="verify">验证许可证</button>
+            <button class="tab" data-tab="manage">管理列表</button>
+        </nav>
+
+        <!-- 生成许可证面板 -->
+        <section id="generate" class="panel active">
+            <div class="card">
+                <h2>📝 生成新许可证</h2>
+                
+                <div class="form-group">
+                    <label for="format">许可证格式</label>
+                    <select id="format">
+                        <option value="serial">序列号格式 (XXXX-XXXX-XXXX-XXXX)</option>
+                        <option value="uuid">UUID 格式</option>
+                        <option value="compact">紧凑格式</option>
+                        <option value="encoded">Base64 编码格式</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="duration">有效期</label>
+                    <div class="duration-input">
+                        <input type="number" id="duration" value="30" min="1" max="3650">
+                        <select id="duration-unit">
+                            <option value="days">天</option>
+                            <option value="months">月</option>
+                            <option value="years">年</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">用户名 (可选)</label>
+                    <input type="text" id="username" placeholder="输入绑定的用户名">
+                </div>
+
+                <div class="form-group">
+                    <label for="product">产品名称 (可选)</label>
+                    <input type="text" id="product" placeholder="输入产品名称">
+                </div>
+
+                <div class="form-group">
+                    <label for="batch-count">批量生成数量</label>
+                    <input type="number" id="batch-count" value="1" min="1" max="100">
+                </div>
+
+                <button id="generate-btn" class="btn primary">
+                    <span>🎫</span> 生成许可证
+                </button>
+
+                <div id="result" class="result hidden">
+                    <h3>✅ 生成成功</h3>
+                    <div id="generated-licenses"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 验证许可证面板 -->
+        <section id="verify" class="panel">
+            <div class="card">
+                <h2>🔍 验证许可证</h2>
+                
+                <div class="form-group">
+                    <label for="verify-key">输入许可证密钥</label>
+                    <input type="text" id="verify-key" placeholder="例如: A1B2-C3D4-E5F6-G7H8">
+                </div>
+
+                <button id="verify-btn" class="btn primary">
+                    <span>✓</span> 验证
+                </button>
+
+                <div id="verify-result" class="verify-result hidden"></div>
+            </div>
+        </section>
+
+        <!-- 管理列表面板 -->
+        <section id="manage" class="panel">
+            <div class="card">
+                <h2>📋 许可证列表</h2>
+                
+                <div class="toolbar">
+                    <input type="text" id="search" placeholder="搜索许可证...">
+                    <select id="filter-status">
+                        <option value="all">全部状态</option>
+                        <option value="valid">有效</option>
+                        <option value="expired">已过期</option>
+                    </select>
+                    <button id="export-btn" class="btn secondary">📤 导出</button>
+                    <button id="clear-btn" class="btn danger">🗑️ 清空</button>
+                </div>
+
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-value" id="total-count">0</span>
+                        <span class="stat-label">总数</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="valid-count">0</span>
+                        <span class="stat-label">有效</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="expired-count">0</span>
+                        <span class="stat-label">已过期</span>
+                    </div>
+                </div>
+
+                <div id="license-list" class="license-list">
+                    <p class="empty-message">暂无许可证，请先生成</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>© 2024 License Manager | 
+                <a href="https://github.com" target="_blank">GitHub</a>
+            </p>
+        </footer>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- 详情模态框 -->
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>📄 许可证详情</h3>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="license.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
