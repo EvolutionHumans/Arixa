@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>许可证管理系统</title>
+    <title>Arixa 许可证管理系统</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="app">
         <header>
-            <h1>🔐 许可证管理系统</h1>
+            <h1>🔐 Arixa 许可证管理系统</h1>
             <p class="subtitle">License Management System</p>
         </header>
 
@@ -42,18 +42,22 @@
                             <option value="days">天</option>
                             <option value="months">月</option>
                             <option value="years">年</option>
+                            <option value="permanent">永久有效</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="username">用户名 (可选)</label>
-                    <input type="text" id="username" placeholder="输入绑定的用户名">
+                    <label for="usertype">用户类型</label>
+                    <select id="usertype">
+                        <option value="用户" selected>用户</option>
+                        <option value="管理员">管理员</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="product">产品名称 (可选)</label>
-                    <input type="text" id="product" placeholder="输入产品名称">
+                    <label for="product">产品名称</label>
+                    <input type="text" id="product" value="Arixa" placeholder="输入产品名称">
                 </div>
 
                 <div class="form-group">
@@ -66,7 +70,23 @@
                 </button>
 
                 <div id="result" class="result hidden">
-                    <h3>✅ 生成成功</h3>
+                    <div class="result-header">
+                        <h3>✅ 生成成功</h3>
+                        <div class="export-buttons">
+                            <button id="export-excel-btn" class="btn export-btn">
+                                <span>📊</span> 导出 Excel
+                            </button>
+                            <button id="export-word-btn" class="btn export-btn">
+                                <span>📄</span> 导出 Word
+                            </button>
+                            <button id="export-txt-btn" class="btn export-btn">
+                                <span>📝</span> 导出 TXT
+                            </button>
+                            <button id="export-json-btn" class="btn export-btn">
+                                <span>📋</span> 导出 JSON
+                            </button>
+                        </div>
+                    </div>
                     <div id="generated-licenses"></div>
                 </div>
             </div>
@@ -101,9 +121,26 @@
                         <option value="all">全部状态</option>
                         <option value="valid">有效</option>
                         <option value="expired">已过期</option>
+                        <option value="permanent">永久有效</option>
                     </select>
-                    <button id="export-btn" class="btn secondary">📤 导出</button>
-                    <button id="clear-btn" class="btn danger">🗑️ 清空</button>
+                </div>
+
+                <div class="toolbar">
+                    <button id="manage-export-excel" class="btn secondary">
+                        <span>📊</span> 导出 Excel
+                    </button>
+                    <button id="manage-export-word" class="btn secondary">
+                        <span>📄</span> 导出 Word
+                    </button>
+                    <button id="manage-export-txt" class="btn secondary">
+                        <span>📝</span> 导出 TXT
+                    </button>
+                    <button id="manage-export-json" class="btn secondary">
+                        <span>📋</span> 导出 JSON
+                    </button>
+                    <button id="clear-btn" class="btn danger">
+                        <span>🗑️</span> 清空
+                    </button>
                 </div>
 
                 <div class="stats">
@@ -114,6 +151,10 @@
                     <div class="stat">
                         <span class="stat-value" id="valid-count">0</span>
                         <span class="stat-label">有效</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value" id="permanent-count">0</span>
+                        <span class="stat-label">永久</span>
                     </div>
                     <div class="stat">
                         <span class="stat-value" id="expired-count">0</span>
@@ -128,8 +169,8 @@
         </section>
 
         <footer>
-            <p>© 2024 License Manager | 
-                <a href="https://github.com" target="_blank">GitHub</a>
+            <p>© 2024 Arixa License Manager | 
+                <a href="https://github.com/EvolutionHumans/Arixa" target="_blank">GitHub</a>
             </p>
         </footer>
     </div>
