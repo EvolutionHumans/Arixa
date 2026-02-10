@@ -1,5 +1,5 @@
 /**
- * 许可证管理系统 - 主应用逻辑
+ * Arixa 许可证管理系统 - 主应用逻辑
  * License Management System - Main Application
  */
 
@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const panels = document.querySelectorAll('.panel');
     const generateBtn = document.getElementById('generate-btn');
     const verifyBtn = document.getElementById('verify-btn');
-    const exportBtn = document.getElementById('export-btn');
     const clearBtn = document.getElementById('clear-btn');
     const searchInput = document.getElementById('search');
     const filterStatus = document.getElementById('filter-status');
@@ -17,6 +16,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalBody = document.getElementById('modal-body');
     const modalClose = document.querySelector('.modal .close');
     const toast = document.getElementById('toast');
+    const durationInput = document.getElementById('duration');
+    const durationUnitSelect = document.getElementById('duration-unit');
+
+    // 存储最近生成的许可证
+    let lastGeneratedLicenses = [];
+
+    // ========== 有效期单位切换 ==========
+    durationUnitSelect.addEventListener('change', function() {
+        if (this.value === 'permanent') {
+            durationInput.disabled = true;
+            durationInput.value = '';
+            durationInput.placeholder = '永久有效';
+        } else {
+            durationInput.disabled = false;
+            durationInput.placeholder = '';
+            if (!durationInput.value) {
+                durationInput.value = '30';
+            }
+        }
+    });
 
     // ========== 标签切换 ==========
     tabs.forEach(tab => {
@@ -38,19 +57,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========== 生成许可证 ==========
     generateBtn.addEventListener('click', async () => {
         const format = document.getElementById('format').value;
-        const duration = parseInt(document.getElementById('duration').value);
+        const duration = parseInt(document.getElementById('duration').value) || 0;
         const durationUnit = document.getElementById('duration-unit').value;
-        const username = document.getElementById('username').value.trim();
-        const product = document.getElementById('product').value.trim();
+        const userType = document.getElementById('usertype').value;
+        const product = document.getElementById('product').value.trim() || 'Arixa';
         const batchCount = parseInt(document.getElementById('batch-count').value);
 
         generateBtn.disabled = true;
         generateBtn.innerHTML = '<span>⏳</span> 生成中...';
 
         try {
-            const options = { format, duration, durationUnit, username, product };
+            const options = { format, duration, durationUnit, userType, product };
             const licenses = await licenseGenerator.generateBatch(batchCount, options);
             
+            lastGeneratedLicenses = licenses;
             displayGeneratedLicenses(licenses);
             showToast(`成功生成 ${licenses.length} 个许可证`);
         } catch (error) {
@@ -69,6 +89,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         let html = '';
         licenses.forEach(license => {
+            const expiresText = license.isPermanent ? '永久有效' : formatDate(license.expiresAt);
+            const durationText = license.isPermanent ? '永久' : `${license.duration} ${getUnitLabel(license.durationUnit)}`;
+            
             html += `
                 <div class="license-item">
                     <div class="license-key">
@@ -76,10 +99,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         <button class="copy-btn" onclick="copyToClipboard('${license.key}')">复制</button>
                     </div>
                     <div class="license-meta">
-                        <span>📅 过期: ${formatDate(license.expiresAt)}</span>
-                        <span>⏱️ 有效期: ${license.duration} ${getUnitLabel(license.durationUnit)}</span>
-                        ${license.metadata?.user ? `<span>👤 ${license.metadata.user}</span>` : ''}
-                        ${license.metadata?.product ? `<span>📦 ${license.metadata.product}</span>` : ''}
+                        <span>📅 过期: ${expiresText}</span>
+                        <span>⏱️ 有效期: ${durationText}</span>
+                        <span>👤 ${license.metadata?.userType || '用户'}</span>
+                        <span>📦 ${license.metadata?.product || 'Arixa'}</span>
                     </div>
                 </div>
             `;
@@ -87,6 +110,138 @@ document.addEventListener('DOMContentLoaded', function() {
 
         container.innerHTML = html;
         result.classList.remove('hidden');
+    }
+
+    // ========== 生成结果导出按钮 ==========
+    document.getElementById('export-excel-btn').addEventListener('click', () => {
+        if (lastGeneratedLicenses.length === 0) {
+            showToast('没有可导出的许可证');
+            return;
+        }
+        downloadFile(
+            licenseGenerator.exportCSV(lastGeneratedLicenses),
+            `Arixa_Licenses_${formatDateFile(new Date())}.csv`,
+            'text/csv;charset=utf-8'
+        );
+        showToast('已导出为 Excel 格式');
+    });
+
+    document.getElementById('export-word-btn').addEventListener('click', () => {
+        if (lastGeneratedLicenses.length === 0) {
+            showToast('没有可导出的许可证');
+            return;
+        }
+        downloadFile(
+            licenseGenerator.exportWord(lastGeneratedLicenses),
+            `Arixa_Licenses_${formatDateFile(new Date())}.doc`,
+            'application/msword'
+        );
+        showToast('已导出为 Word 格式');
+    });
+
+    document.getElementById('export-txt-btn').addEventListener('click', () => {
+        if (lastGeneratedLicenses.length === 0) {
+            showToast('没有可导出的许可证');
+            return;
+        }
+        downloadFile(
+            licenseGenerator.exportTXT(lastGeneratedLicenses),
+            `Arixa_Licenses_${formatDateFile(new Date())}.txt`,
+            'text/plain;charset=utf-8'
+        );
+        showToast('已导出为 TXT 格式');
+    });
+
+    document.getElementById('export-json-btn').addEventListener('click', () => {
+        if (lastGeneratedLicenses.length === 0) {
+            showToast('没有可导出的许可证');
+            return;
+        }
+        downloadFile(
+            licenseGenerator.exportJSON(lastGeneratedLicenses),
+            `Arixa_Licenses_${formatDateFile(new Date())}.json`,
+            'application/json'
+        );
+        showToast('已导出为 JSON 格式');
+    });
+
+    // ========== 管理列表导出按钮 ==========
+    document.getElementById('manage-export-excel').addEventListener('click', () => {
+        const licenses = getFilteredLicenses();
+        if (licenses.length === 0) {
+            showToast('没有可导出的许可证');
+            return;
+        }
+        downloadFile(
+            licenseGenerator.exportCSV(licenses),
+            `Arixa_All_Licenses_${formatDateFile(new Date())}.csv`,
+            'text/csv;charset=utf-8'
+        );
+        showToast('已导出为 Excel 格式');
+    });
+
+    document.getElementById('manage-export-word').addEventListener('click', () => {
+        const licenses = getFilteredLicenses();
+        if (licenses.length === 0) {
+            showToast('没有可导出的许可证');
+            return;
+        }
+        downloadFile(
+            licenseGenerator.exportWord(licenses),
+            `Arixa_All_Licenses_${formatDateFile(new Date())}.doc`,
+            'application/msword'
+        );
+        showToast('已导出为 Word 格式');
+    });
+
+    document.getElementById('manage-export-txt').addEventListener('click', () => {
+        const licenses = getFilteredLicenses();
+        if (licenses.length === 0) {
+            showToast('没有可导出的许可证');
+            return;
+        }
+        downloadFile(
+            licenseGenerator.exportTXT(licenses),
+            `Arixa_All_Licenses_${formatDateFile(new Date())}.txt`,
+            'text/plain;charset=utf-8'
+        );
+        showToast('已导出为 TXT 格式');
+    });
+
+    document.getElementById('manage-export-json').addEventListener('click', () => {
+        const licenses = getFilteredLicenses();
+        if (licenses.length === 0) {
+            showToast('没有可导出的许可证');
+            return;
+        }
+        downloadFile(
+            licenseGenerator.exportJSON(licenses),
+            `Arixa_All_Licenses_${formatDateFile(new Date())}.json`,
+            'application/json'
+        );
+        showToast('已导出为 JSON 格式');
+    });
+
+    // ========== 获取筛选后的许可证 ==========
+    function getFilteredLicenses() {
+        const query = searchInput.value.trim();
+        const status = filterStatus.value;
+        return licenseGenerator.search(query, status);
+    }
+
+    // ========== 下载文件 ==========
+    function downloadFile(content, filename, mimeType) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url);
     }
 
     // ========== 验证许可证 ==========
@@ -105,21 +260,34 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========== 显示验证结果 ==========
     function displayVerifyResult(result) {
         const container = document.getElementById('verify-result');
-        container.classList.remove('hidden', 'valid', 'invalid');
+        container.classList.remove('hidden', 'valid', 'invalid', 'permanent');
         
         if (result.valid) {
-            container.classList.add('valid');
-            container.innerHTML = `
-                <div class="icon">✅</div>
-                <h4>许可证有效</h4>
-                <p>剩余 <strong>${result.daysRemaining}</strong> 天</p>
-                <div class="details">
-                    <p><strong>创建时间:</strong> <span>${formatDate(result.license.createdAt)}</span></p>
-                    <p><strong>过期时间:</strong> <span>${formatDate(result.license.expiresAt)}</span></p>
-                    ${result.license.metadata?.user ? `<p><strong>用户:</strong> <span>${result.license.metadata.user}</span></p>` : ''}
-                    ${result.license.metadata?.product ? `<p><strong>产品:</strong> <span>${result.license.metadata.product}</span></p>` : ''}
-                </div>
-            `;
+            if (result.isPermanent) {
+                container.classList.add('permanent');
+                container.innerHTML = `
+                    <div class="icon">♾️</div>
+                    <h4>许可证永久有效</h4>
+                    <div class="details">
+                        <p><strong>创建时间:</strong> <span>${formatDate(result.license.createdAt)}</span></p>
+                        <p><strong>用户类型:</strong> <span>${result.license.metadata?.userType || '用户'}</span></p>
+                        <p><strong>产品名称:</strong> <span>${result.license.metadata?.product || 'Arixa'}</span></p>
+                    </div>
+                `;
+            } else {
+                container.classList.add('valid');
+                container.innerHTML = `
+                    <div class="icon">✅</div>
+                    <h4>许可证有效</h4>
+                    <p>剩余 <strong>${result.daysRemaining}</strong> 天</p>
+                    <div class="details">
+                        <p><strong>创建时间:</strong> <span>${formatDate(result.license.createdAt)}</span></p>
+                        <p><strong>过期时间:</strong> <span>${formatDate(result.license.expiresAt)}</span></p>
+                        <p><strong>用户类型:</strong> <span>${result.license.metadata?.userType || '用户'}</span></p>
+                        <p><strong>产品名称:</strong> <span>${result.license.metadata?.product || 'Arixa'}</span></p>
+                    </div>
+                `;
+            }
         } else {
             container.classList.add('invalid');
             container.innerHTML = `
@@ -128,6 +296,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${result.license ? `
                     <div class="details">
                         <p><strong>过期时间:</strong> <span>${formatDate(result.license.expiresAt)}</span></p>
+                        <p><strong>用户类型:</strong> <span>${result.license.metadata?.userType || '用户'}</span></p>
+                        <p><strong>产品名称:</strong> <span>${result.license.metadata?.product || 'Arixa'}</span></p>
                     </div>
                 ` : '<p>该许可证密钥未在系统中注册</p>'}
             `;
@@ -146,6 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('total-count').textContent = stats.total;
         document.getElementById('valid-count').textContent = stats.valid;
         document.getElementById('expired-count').textContent = stats.expired;
+        document.getElementById('permanent-count').textContent = stats.permanent;
         
         // 更新列表
         const container = document.getElementById('license-list');
@@ -162,20 +333,32 @@ document.addEventListener('DOMContentLoaded', function() {
         licenses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         
         licenses.forEach(license => {
-            const isValid = new Date(license.expiresAt) > now;
+            let statusClass = 'valid';
+            let statusText = '✓ 有效';
+            
+            if (license.isPermanent) {
+                statusClass = 'permanent';
+                statusText = '♾️ 永久';
+            } else if (new Date(license.expiresAt) <= now) {
+                statusClass = 'expired';
+                statusText = '✗ 已过期';
+            }
+
+            const expiresText = license.isPermanent ? '永久有效' : formatDate(license.expiresAt);
+
             html += `
                 <div class="license-item">
                     <div class="license-info">
                         <div class="license-key">
                             <span>${license.key}</span>
-                            <span class="status-badge ${isValid ? 'valid' : 'expired'}">
-                                ${isValid ? '✓ 有效' : '✗ 已过期'}
+                            <span class="status-badge ${statusClass}">
+                                ${statusText}
                             </span>
                         </div>
                         <div class="license-meta">
-                            <span>📅 ${formatDate(license.expiresAt)}</span>
-                            ${license.metadata?.user ? `<span>👤 ${license.metadata.user}</span>` : ''}
-                            ${license.metadata?.product ? `<span>📦 ${license.metadata.product}</span>` : ''}
+                            <span>📅 ${expiresText}</span>
+                            <span>👤 ${license.metadata?.userType || '用户'}</span>
+                            <span>📦 ${license.metadata?.product || 'Arixa'}</span>
                         </div>
                     </div>
                     <div class="license-actions">
@@ -193,21 +376,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========== 搜索和筛选 ==========
     searchInput.addEventListener('input', refreshLicenseList);
     filterStatus.addEventListener('change', refreshLicenseList);
-
-    // ========== 导出 ==========
-    exportBtn.addEventListener('click', () => {
-        const data = licenseGenerator.exportJSON();
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `licenses_${formatDateFile(new Date())}.json`;
-        a.click();
-        
-        URL.revokeObjectURL(url);
-        showToast('导出成功');
-    });
 
     // ========== 清空 ==========
     clearBtn.addEventListener('click', () => {
@@ -250,8 +418,24 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!license) return;
 
         const now = new Date();
-        const isValid = new Date(license.expiresAt) > now;
-        const daysRemaining = Math.ceil((new Date(license.expiresAt) - now) / (1000 * 60 * 60 * 24));
+        let statusText = '有效';
+        let daysRemaining = '-';
+        
+        if (license.isPermanent) {
+            statusText = '永久有效';
+            daysRemaining = '∞';
+        } else {
+            const expiresAt = new Date(license.expiresAt);
+            if (expiresAt <= now) {
+                statusText = '已过期';
+                daysRemaining = '0';
+            } else {
+                daysRemaining = Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24)) + ' 天';
+            }
+        }
+
+        const expiresText = license.isPermanent ? '永久有效' : formatDateTime(license.expiresAt);
+        const durationText = license.isPermanent ? '永久' : `${license.duration} ${getUnitLabel(license.durationUnit)}`;
 
         modalBody.innerHTML = `
             <div class="detail-row">
@@ -261,14 +445,14 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="detail-row">
                 <span class="detail-label">状态</span>
                 <span class="detail-value">
-                    <span class="status-badge ${isValid ? 'valid' : 'expired'}">
-                        ${isValid ? '✓ 有效' : '✗ 已过期'}
+                    <span class="status-badge ${license.isPermanent ? 'permanent' : (new Date(license.expiresAt) > now ? 'valid' : 'expired')}">
+                        ${statusText}
                     </span>
                 </span>
             </div>
             <div class="detail-row">
-                <span class="detail-label">剩余天数</span>
-                <span class="detail-value">${isValid ? daysRemaining + ' 天' : '已过期'}</span>
+                <span class="detail-label">剩余时间</span>
+                <span class="detail-value">${daysRemaining}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">创建时间</span>
@@ -276,24 +460,20 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="detail-row">
                 <span class="detail-label">过期时间</span>
-                <span class="detail-value">${formatDateTime(license.expiresAt)}</span>
+                <span class="detail-value">${expiresText}</span>
             </div>
             <div class="detail-row">
                 <span class="detail-label">有效期</span>
-                <span class="detail-value">${license.duration} ${getUnitLabel(license.durationUnit)}</span>
+                <span class="detail-value">${durationText}</span>
             </div>
-            ${license.metadata?.user ? `
             <div class="detail-row">
-                <span class="detail-label">用户</span>
-                <span class="detail-value">${license.metadata.user}</span>
+                <span class="detail-label">用户类型</span>
+                <span class="detail-value">${license.metadata?.userType || '用户'}</span>
             </div>
-            ` : ''}
-            ${license.metadata?.product ? `
             <div class="detail-row">
-                <span class="detail-label">产品</span>
-                <span class="detail-value">${license.metadata.product}</span>
+                <span class="detail-label">产品名称</span>
+                <span class="detail-value">${license.metadata?.product || 'Arixa'}</span>
             </div>
-            ` : ''}
         `;
 
         modal.classList.remove('hidden');
@@ -309,6 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== 工具函数 ==========
     function formatDate(dateStr) {
+        if (!dateStr) return '永久有效';
         const date = new Date(dateStr);
         return date.toLocaleDateString('zh-CN', {
             year: 'numeric',
@@ -318,6 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function formatDateTime(dateStr) {
+        if (!dateStr) return '永久有效';
         const date = new Date(dateStr);
         return date.toLocaleString('zh-CN', {
             year: 'numeric',
@@ -336,7 +518,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const labels = {
             days: '天',
             months: '月',
-            years: '年'
+            years: '年',
+            permanent: '永久'
         };
         return labels[unit] || unit;
     }
