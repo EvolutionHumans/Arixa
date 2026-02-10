@@ -162,7 +162,7 @@ select:focus {
 }
 
 .duration-input select {
-    width: 100px;
+    width: 120px;
 }
 
 /* ========== 按钮 ========== */
@@ -195,6 +195,8 @@ select:focus {
 .btn.secondary {
     background: var(--gray-100);
     color: var(--gray-700);
+    padding: 10px 16px;
+    font-size: 0.9rem;
 }
 
 .btn.secondary:hover {
@@ -204,6 +206,8 @@ select:focus {
 .btn.danger {
     background: var(--danger);
     color: white;
+    padding: 10px 16px;
+    font-size: 0.9rem;
 }
 
 .btn.danger:hover {
@@ -215,6 +219,25 @@ select:focus {
     font-size: 0.875rem;
 }
 
+/* ========== 导出按钮组 ========== */
+.export-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.export-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 10px 16px;
+    font-size: 0.85rem;
+}
+
+.export-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
 /* ========== 结果区域 ========== */
 .result {
     margin-top: 24px;
@@ -224,9 +247,18 @@ select:focus {
     border: 1px solid #a7f3d0;
 }
 
-.result h3 {
-    color: var(--success);
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
     margin-bottom: 16px;
+}
+
+.result-header h3 {
+    color: var(--success);
+    margin: 0;
 }
 
 .license-item {
@@ -307,6 +339,11 @@ select:focus {
     border: 2px solid var(--danger);
 }
 
+.verify-result.permanent {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 2px solid #3b82f6;
+}
+
 .verify-result .icon {
     font-size: 3rem;
     margin-bottom: 12px;
@@ -339,7 +376,7 @@ select:focus {
 .toolbar {
     display: flex;
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     flex-wrap: wrap;
 }
 
@@ -356,28 +393,30 @@ select:focus {
 /* ========== 统计 ========== */
 .stats {
     display: flex;
-    gap: 20px;
+    gap: 16px;
     margin-bottom: 24px;
+    flex-wrap: wrap;
 }
 
 .stat {
     flex: 1;
+    min-width: 80px;
     text-align: center;
-    padding: 20px;
+    padding: 16px;
     background: var(--gray-50);
     border-radius: var(--radius);
 }
 
 .stat-value {
     display: block;
-    font-size: 2rem;
+    font-size: 1.8rem;
     font-weight: 700;
     color: var(--primary);
 }
 
 .stat-label {
     color: var(--gray-500);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
 }
 
 /* ========== 许可证列表 ========== */
@@ -427,6 +466,11 @@ select:focus {
 .status-badge.expired {
     background: #fee2e2;
     color: #991b1b;
+}
+
+.status-badge.permanent {
+    background: #dbeafe;
+    color: #1e40af;
 }
 
 .empty-message {
@@ -570,7 +614,11 @@ footer a:hover {
     }
     
     .stats {
-        flex-direction: column;
+        flex-wrap: wrap;
+    }
+    
+    .stat {
+        min-width: calc(50% - 8px);
     }
     
     .toolbar {
@@ -591,5 +639,19 @@ footer a:hover {
     .license-list .license-actions {
         width: 100%;
         justify-content: flex-end;
+    }
+    
+    .export-buttons {
+        width: 100%;
+    }
+    
+    .export-btn {
+        flex: 1;
+        min-width: calc(50% - 4px);
+    }
+    
+    .result-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 }
